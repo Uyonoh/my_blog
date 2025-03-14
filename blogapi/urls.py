@@ -20,7 +20,7 @@ from rest_framework.routers import DefaultRouter
 
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import PostViewSet, CommentViewSet
+from .views import PostViewSet, CommentViewSet, PostDetailView
 
 # Create a router and register our viewsets
 router = DefaultRouter()
@@ -29,4 +29,5 @@ router.register(r'comments', CommentViewSet)  # Generates /api/comments/
 
 urlpatterns = [
     path("", include(router.urls)),  # Include all router-generated URLs
+    # path('api/posts/<slug:slug>/', PostDetailView.as_view(), name='post-detail'),
 ]
