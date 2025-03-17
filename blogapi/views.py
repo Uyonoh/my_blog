@@ -1,10 +1,19 @@
-from rest_framework import generics, permissions
+from rest_framework import generics, permissions, authentication
 from .models import Post, Comment
 from .serializers import PostSerializer, CommentSerializer
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.generics import RetrieveAPIView
 from rest_framework.response import Response
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from django.shortcuts import get_object_or_404
+
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.authtoken.models import Token
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework import status
+from .models import CustomUser
+
 
 
 
@@ -16,12 +25,23 @@ class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
     lookup_field = "slug"
-    permission_classes = [permissions.AllowAny]  # Adjust as needed
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [permissions.AllowAny]
+
+    def perform_create(self, serializer):
+        if not self.request.user or self.request.user.is_anonymous:
+            raise ValueError("User must be authenticated to create a post.")
+        serializer.save(author=self.request.user)
 
 class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
     permission_classes = [permissions.IsAuthenticated]  # Require login to comment
+
+    def perform_create(self, serializer):
+        # Auto-set author to logged-in user
+        serializer.save(user=self.request.user)
 
 class PostDetailView(RetrieveAPIView):
     queryset = Post.objects.all()
@@ -33,40 +53,25 @@ class PostDetailView(RetrieveAPIView):
         print(f"Slug received: {slug}")  # ✅ Print slug to terminal
         return super().get(request, *args, **kwargs)
 
+class SignupView(APIView):
+    def post(self, request):
+        username = request.data.get("username")
+        password = request.data.get("password")
 
-# # Post List & Create
-# class PostListCreateView(generics.ListCreateAPIView):
-#     queryset = Post.objects.all()
-#     serializer_class = PostSerializer
-#     permission_classes = [permissions.AllowAny]  # Publicly accessible
+        if CustomUser.objects.filter(username=username).exists():
+            return Response({"error": "User already exists"}, status=status.HTTP_400_BAD_REQUEST)
 
-# # Post Detail, Update & Delete
-# class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
-#     queryset = Post.objects.all()
-#     serializer_class = PostSerializer
-#     permission_classes = [permissions.AllowAny]  # Update this to IsAuthenticated if needed
+        user = CustomUser.objects.create_user(username=username, password=password)
+        token, _ = Token.objects.get_or_create(user=user)
 
-# # Comment List & Create
-# class CommentListCreateView(generics.ListCreateAPIView):
-#     queryset = Comment.objects.all()
-#     serializer_class = CommentSerializer
-#     permission_classes = [permissions.IsAuthenticated]  # Only logged-in users can comment
+        return Response({"token": token.key}, status=status.HTTP_201_CREATED)
+    
+@api_view(["GET"])
+@permission_classes([permissions.IsAuthenticated])
 
-#     def perform_create(self, serializer):
-#         serializer.save(user=self.request.user)
-
-# # Like/Unlike a Post
-# @api_view(["POST"])
-# def like_post(request, post_id):
-#     post = get_object_or_404(Post, id=post_id)
-#     user = request.user
-
-#     if user in post.likes.all():
-#         post.likes.remove(user)  # Unlike
-#         message = "Post unliked"
-#     else:
-#         post.likes.add(user)  # Like
-#         message = "Post liked"
-
-#     post.save()
-#     return Response({"message": message, "total_likes": post.total_likes()})
+def current_user(request):
+    user = request.user
+    return Response({
+        "id": user.id,
+        "username": user.username,
+    })
