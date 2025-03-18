@@ -54,6 +54,8 @@ class PostDetailView(RetrieveAPIView):
         return super().get(request, *args, **kwargs)
 
 class SignupView(APIView):
+    permission_classes = [permissions.AllowAny]
+
     def post(self, request):
         username = request.data.get("username")
         password = request.data.get("password")

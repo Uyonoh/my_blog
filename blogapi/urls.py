@@ -32,10 +32,10 @@ router.register(r'comments', CommentViewSet)  # Generates /api/comments/
 
 urlpatterns = [
     path("", include(router.urls)),  # Include all router-generated URLs
-    path("auth/login/", ObtainAuthToken.as_view(), name="api-login"),
-    path("auth/signup/", SignupView.as_view(), name="api-signup"),
-    path("auth/user/", current_user, name="current-user"),
-    path('accounts/', include('django.contrib.auth.urls')),
+    path("auth/login/", ObtainAuthToken.as_view(), name="login"),
+    path("auth/signup/", SignupView.as_view(), name="signup"),
+    # path("auth/user/", current_user, name="current-user"),
+    # path('accounts/', include('django.contrib.auth.urls')),
 ]
 
 if settings.DEBUG:
