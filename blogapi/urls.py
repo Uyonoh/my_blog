@@ -34,7 +34,7 @@ urlpatterns = [
     path("", include(router.urls)),  # Include all router-generated URLs
     path("auth/login/", ObtainAuthToken.as_view(), name="login"),
     path("auth/signup/", SignupView.as_view(), name="signup"),
-    # path("auth/user/", current_user, name="current-user"),
+    path("auth/user/", current_user, name="current-user"),
     # path('accounts/', include('django.contrib.auth.urls')),
 ]
 

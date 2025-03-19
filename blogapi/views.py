@@ -18,6 +18,7 @@ from .models import CustomUser
 
 
 from rest_framework import viewsets, permissions
+from rest_framework.exceptions import NotAuthenticated
 from .models import Post, Comment
 from .serializers import PostSerializer, CommentSerializer
 
@@ -31,7 +32,8 @@ class PostViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         if not self.request.user or self.request.user.is_anonymous:
-            raise ValueError("User must be authenticated to create a post.")
+            raise NotAuthenticated("User must be authenticated to create a post.")
+            # return Response({"error": "User must be authenticated to create a post."}, status=status.HTTP_401_UNAUTHORIZED)
         serializer.save(author=self.request.user)
 
 class CommentViewSet(viewsets.ModelViewSet):
